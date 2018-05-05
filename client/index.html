@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+  <head>
+  </head>
+  <body>
+<!--     PAGE BODY -->
+    <h1 >I am alive!!</h1>
+    <div id = 'fbloginwrap' style = "display: none">
+      <div class="fb-login-button" data-max-rows="1" data-size="large" data-button-type="login_with" data-show-faces="false" data-auto-logout-link="false" data-use-continue-as="false"  data-onlogin = 'getLoginStatus();'></div>
+    </div>
+    <p id = 'teststatus'></p>
+<!--     END PAGE BODY -->
+<!--     DEPENDENCIES   -->
+    <script src = "/socket.io/socket.io.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<!--     END DEPENDENCIES -->
+<!--     MAIN SCRIPT -->
+    <script>
+      //START FB LOGIN CODE
+      
+      //Checks FB Login status
+      function getLoginStatus(){
+        FB.getLoginStatus(function(response) {
+          handleAuthorization(response);
+        });
+      }
+
+      //ASync load Facebook SDK
+      window.fbAsyncInit = function() {
+        FB.init({
+          appId      : '1031161267033993',
+          xfbml      : true,
+          version    : 'v3.0'
+        });
+          
+        FB.AppEvents.logPageView();   
+
+        //When loading finishes, check login status
+        getLoginStatus();
+      };
+
+      (function(d, s, id){
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement(s); js.id = id;
+        js.src = "https://connect.facebook.net/en_US/sdk.js";
+        fjs.parentNode.insertBefore(js, fjs);
+      }(document, 'script', 'facebook-jssdk'));
+
+      function handleAuthorization(fbresponse){
+        if(fbresponse.status === 'connected'){
+          requestAuthFromServer(fbresponse.authResponse.accessToken);
+          $('#fbloginwrap').css('display','none');
+          console.log('Authorized');
+        } else {
+          $('#fbloginwrap').css('display','block');
+          console.log('Not authorized');
+        }
+      }
+
+      //WARNING: Only send if connected via HTTP
+      function requestAuthFromServer(token){
+        socket.emit('requestAuth', token)
+      }
+      //END FB LOGIN CODE
+
+      //START SOCKET CODE
+      var URL_SERVER = 'https://localhost:8443';
+      var socket = io.connect(URL_SERVER);
+
+      socket.on('message', function(data) {
+        alert(data);
+      });
+      socket.on('authSucceed', function(data) {
+        $('#teststatus').text(data);
+      });
+      //END SOCKET CODE
+    </script>
+  </body>
+</html>

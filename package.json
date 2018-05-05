@@ -1,0 +1,28 @@
+{
+  "name": "socketauth",
+  "version": "1.0.0",
+  "description": "Authorization over socketio with OAuth2 and JWT",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jasonliu19/SocketAuth.git"
+  },
+  "keywords": [
+    "socket"
+  ],
+  "author": "Jason Liu <jasonliu1999@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jasonliu19/SocketAuth/issues"
+  },
+  "homepage": "https://github.com/jasonliu19/SocketAuth#readme",
+  "dependencies": {
+    "express": "^4.16.3",
+    "fs": "0.0.1-security",
+    "request": "^2.85.0",
+    "socket.io": "^2.1.0"
+  }
+}
