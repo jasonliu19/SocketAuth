@@ -8,7 +8,10 @@
     <div id = 'fbloginwrap' style = "display: none">
       <div class="fb-login-button" data-max-rows="1" data-size="large" data-button-type="login_with" data-show-faces="false" data-auto-logout-link="false" data-use-continue-as="false"  data-onlogin = 'getLoginStatus();'></div>
     </div>
-    <p id = 'teststatus'></p>
+<!--     TEST ELEMENTS -->
+    <p id = 'teststatus' class = 'test'></p>
+    <p id = 'testrealtime' class = 'test'></p>
+    <button class = 'test' onclick = "testBogusAuthentication()">Test bogus authentication</button>
 <!--     END PAGE BODY -->
 <!--     DEPENDENCIES   -->
     <script src = "/socket.io/socket.io.js"></script>
@@ -57,24 +60,44 @@
           console.log('Not authorized');
         }
       }
-
-      //WARNING: Only send if connected via HTTP
-      function requestAuthFromServer(token){
-        socket.emit('requestAuth', token)
-      }
       //END FB LOGIN CODE
 
       //START SOCKET CODE
       var URL_SERVER = 'https://localhost:8443';
       var socket = io.connect(URL_SERVER);
 
+      //WARNING: Only send if connected via HTTP
+      function requestAuthFromServer(token){
+        socket.emit('requestAuth', token);
+      }
+
       socket.on('message', function(data) {
         alert(data);
       });
-      socket.on('authSucceed', function(data) {
+      socket.on('err', function(err){
+        if(err.type === 'authFailed'){
+          alert('Authentication failed: ' + err.message);
+        } else {
+          alert('Error: ' + err.message);
+        }
+      });
+      socket.on('authSucceeded', function(data) {
         $('#teststatus').text(data);
       });
+
+      socket.on('duplicateConnection', function(){
+        alert('Another user has logged into your account');
+      });
       //END SOCKET CODE
+
+      //START TEST CODE
+      function testBogusAuthentication(){
+        socket.emit('requestAuth', 'asdasdsadas');
+      }
+      socket.on('testrealtime', function(val){
+        $('#testrealtime').text(val);
+      });
+
     </script>
   </body>
 </html>
