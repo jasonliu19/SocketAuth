@@ -4,6 +4,7 @@
   "description": "Authorization over socketio with OAuth2 and JWT",
   "main": "main.js",
   "scripts": {
+    "start": "node main.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
