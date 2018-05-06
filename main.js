@@ -187,6 +187,8 @@ setInterval(function(){
 //Test real time authentication
 var testVal = 0;
 setInterval(function(){
+	if(testVal > 999999)
+		testVal = 0;
 	testVal++;
 	emitAll('testrealtime', testVal);
 }, 1000);
