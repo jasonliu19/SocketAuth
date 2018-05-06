@@ -1,28 +1,35 @@
 var fs = require('fs');
 var https = require('https');
-
 var express = require('express');
 var app = express();
+var request = require('request')
+var JWT = require('./server/jwthandler.js');
+var io;
 
-var options = {
+var localServerOptions = {
   key: fs.readFileSync('./security/file.pem'),
   cert: fs.readFileSync('./security/file.crt')
 };
-var serverPort = 8443;
 
-var server = https.createServer(options, app);
-var io = require('socket.io')(server);
+var serverPort = process.env.PORT || 8443;
+var serverType = process.env.NODE_ENV;
 
-var request = require('request')
-
-var JWT = require('./server/jwthandler.js');
+if(serverType !== 'production'){
+	var https = require('https');
+	var server = https.createServer(localServerOptions, app);
+	server.listen(serverPort, function() {
+	 	console.log('Started server on port %s', serverPort);
+	});
+	io = require('socket.io')(server);
+} else {
+	var server = app.listen(serverPort, function(){
+		console.log('Started server on port %s', serverPort);
+	});
+	io = require('socket.io')(server);
+}
 
 app.get('/', function(req, res) {
   res.sendFile(__dirname + '/client/index.html');
-});
-
-server.listen(serverPort, function() {
-  console.log('Started server on port %s', serverPort);
 });
 
 io.on('connection', function(socket) {
