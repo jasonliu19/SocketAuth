@@ -14,6 +14,7 @@ var localServerOptions = {
 var serverPort = process.env.PORT || 8443;
 var serverType = process.env.NODE_ENV;
 
+//Starts server based on environment
 if(serverType !== 'production'){
 	var https = require('https');
 	var server = https.createServer(localServerOptions, app);
@@ -26,22 +27,18 @@ if(serverType !== 'production'){
 		console.log('Started server on port %s', serverPort);
 	});
 	io = require('socket.io')(server);
-}
-
-app.get('/', function(req, res) {
-  res.sendFile(__dirname + '/client/index.html');
-});
-
-//For Heroku: redirect all traffic to https
-
-app.configure('production' function(){
+	//For Heroku: redirect all traffic to https
 	app.use(function(req,res,next){
-		if(req.header 'x-forwarded-proto' !== 'https'){
+		if(req.headers['x-forwarded-proto'] !== 'https'){
 			res.redirect(`https://${req.header('host')}${req.url}`);
 		} else{
 			next();
 		}
 	});
+}
+
+app.get('/', function(req, res) {
+  res.sendFile(__dirname + '/client/index.html');
 });
 
 io.on('connection', function(socket) {
