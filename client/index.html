@@ -19,6 +19,7 @@
 <!--     END DEPENDENCIES -->
 <!--     MAIN SCRIPT -->
     <script>
+      var authToken;
       //START FB LOGIN CODE
       
       //Checks FB Login status
@@ -75,9 +76,6 @@
       }
 
       function initSocketEvents(){
-        socket.on('message', function(data) {
-          alert(data);
-        });
 
         socket.on('exception', function(err){
           if(err.type === 'authFailed'){
@@ -87,12 +85,17 @@
           }
         });
 
-        socket.on('authSucceeded', function(data) {
-          $('#teststatus').text(data);
+        socket.on('authSucceeded', function(token) {
+          $('#teststatus').text(token);
+          authToken = token;
         });
 
         socket.on('duplicateConnection', function(){
           alert('Another user has logged into your account');
+        });
+
+        socket.on('verifyToken', function(){
+          socket.emit('verifyToken', token);
         });
 
         socket.on('testrealtime', function(val){

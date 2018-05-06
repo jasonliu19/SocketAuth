@@ -15,7 +15,7 @@ var io = require('socket.io')(server);
 
 var request = require('request')
 
-const expiryTime = 15;
+var JWT = require('./server/jwthandler.js');
 
 app.get('/', function(req, res) {
   res.sendFile(__dirname + '/client/index.html');
@@ -59,6 +59,15 @@ function authenticate(socket){
 		socket.disconnect(true);
 	}
 }
+
+function emitAll(type, data){
+	io.emit(type, data);
+}
+
+function emitError(socket, type, message){
+	socket.emit('exception', {type: type, message: message});
+}
+
 //Temp user profile storage (replace with database)
 var userData = {};
 
@@ -88,16 +97,11 @@ function authenticateUserFacebook(socket, token){
 	});
 }
 
-function emitError(socket, type, message){
-	socket.emit('exception', {type: type, message: message});
-}
-
-
 function authSucceeded(socket, userid){
-	//TODO: Generate JWT token
+	var token = JWT.generateToken(userid, socket.id);
 	revokeOldAuthentication(userid);
-	UserList[userid] = {socket: socket, expiresIn: expiryTime}; //TODO: Replace with token
-	socket.emit('authSucceeded', 'insert jwt token here');
+	UserList[userid] = {socket: socket, token: token}; //TODO: Replace with token
+	socket.emit('authSucceeded', token);
 }
 
 function revokeOldAuthentication(userid){
@@ -107,9 +111,15 @@ function revokeOldAuthentication(userid){
 	}
 }
 
-function emitAll(type, data){
-	io.emit(type, data);
-}
+// function verifyAndRefreshAllUserAuthorizations(){
+// 	emitAll('')
+// }
+
+// setInterval(function(){
+// 	testVal++;
+// 	emitAll('testrealtime', testVal);
+// }, 1000*10);
+
 
 //Test real time authentication
 var testVal = 0;
