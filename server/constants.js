@@ -1,1 +1,1 @@
-exports.TOKENEXPIRETIME = 12;
+exports.TOKENEXPIRETIME = 30;

@@ -4,7 +4,7 @@
   </head>
   <body>
 <!--     PAGE BODY -->
-    <h1 >I am alive!!</h1>
+    <h1 >Socket Authorization Test</h1>
     <div id = 'fbloginwrap' style = "display: none">
       <div class="fb-login-button" data-max-rows="1" data-size="large" data-button-type="login_with" data-show-faces="false" data-auto-logout-link="false" data-use-continue-as="false"  data-onlogin = 'getLoginStatus();'></div>
     </div>
@@ -95,7 +95,12 @@
         });
 
         socket.on('verifyToken', function(){
-          socket.emit('verifyToken', token);
+          socket.emit('verifyToken', authToken);
+        });
+
+        socket.on('refreshToken', function(token){
+          $('#teststatus').text(token);
+          authToken = token;
         });
 
         socket.on('testrealtime', function(val){

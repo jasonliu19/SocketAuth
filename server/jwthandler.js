@@ -18,6 +18,7 @@ JWT.generateToken = function(userid, socketid) {
 	return jwt.sign(payload, secret, options);
 }
 
+
 JWT.verifyToken = function(userid, socketid, token){
 	var payload;
 	try {
@@ -33,7 +34,7 @@ JWT.verifyToken = function(userid, socketid, token){
 	return true;
 }
 
-JWT.generateRefreshToken = function(){
+JWT.generateRefreshToken = function(token){
 	try {
 		var payload = jwt.verify(token, secret);
 		delete payload.iat;

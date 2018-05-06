@@ -58,6 +58,14 @@ function authenticate(socket){
 		emitError(socket, 'authFailed', err);
 		socket.disconnect(true);
 	}
+
+	initSocketEvents(socket);
+}
+
+function initSocketEvents(socket){
+	socket.on('verifyToken', function(token){
+		verifyToken(socket, token);
+	});
 }
 
 function emitAll(type, data){
@@ -100,7 +108,8 @@ function authenticateUserFacebook(socket, token){
 function authSucceeded(socket, userid){
 	var token = JWT.generateToken(userid, socket.id);
 	revokeOldAuthentication(userid);
-	UserList[userid] = {socket: socket, token: token}; //TODO: Replace with token
+	socket.userid = userid;
+	UserList[userid] = {socket: socket, token: token, verified: true}; //TODO: Replace with token
 	socket.emit('authSucceeded', token);
 }
 
@@ -111,14 +120,52 @@ function revokeOldAuthentication(userid){
 	}
 }
 
-// function verifyAndRefreshAllUserAuthorizations(){
-// 	emitAll('')
-// }
+var verifictionCounter = 2;
 
-// setInterval(function(){
-// 	testVal++;
-// 	emitAll('testrealtime', testVal);
-// }, 1000*10);
+
+function updateAuthorization(){
+	verifictionCounter++;
+	if(verifictionCounter >= 3){
+		requestAllTokens();
+		verifictionCounter = 0;
+	}
+
+	//Terminate connection to clients which failed to provide valid tokens
+	if(verifictionCounter === 1){
+		for(var uid in UserList){
+			if(UserList[uid].verified === false){
+				socket = UserList[uid].socket;
+				emitError(socket, 'authRevoked', 'Token refresh failed');
+				socket.disconnect();
+				delete UserList[uid];
+			}
+		}
+	}
+}
+
+function requestAllTokens(){
+	emitAll('verifyToken', null)
+	for(var uid in UserList){
+		UserList[uid].verified = false;
+	}
+}
+
+function verifyToken(socket, token){
+	if(JWT.verifyToken(socket.userid, socket.id, token)){
+		var refreshToken = JWT.generateRefreshToken(token);
+		socket.emit('refreshToken', refreshToken);
+		UserList[socket.userid].verified = true;
+		UserList[socket.userid].token = refreshToken;
+		//console.log('Refreshing with token: ' + refreshToken);
+	} else{
+		emitError(socket, 'verificationFailed', 'Invalid token');
+	}
+}
+
+//Loop to periodically check users are properly authenticated
+setInterval(function(){
+	updateAuthorization();
+}, 1000*5);
 
 
 //Test real time authentication
@@ -126,5 +173,5 @@ var testVal = 0;
 setInterval(function(){
 	testVal++;
 	emitAll('testrealtime', testVal);
-}, 1000/10);
+}, 1000);
 
