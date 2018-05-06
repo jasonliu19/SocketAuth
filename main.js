@@ -27,16 +27,42 @@ server.listen(serverPort, function() {
 
 io.on('connection', function(socket) {
   console.log('New socket with id: '+ socket.id);
-  //Define new method for each socket
-  socket.on('requestAuth', function(token){
-  	authenticateUserFacebook(socket, token);
-  });
+  //Handle authorization
+  authenticate(socket);
 });
 
+function authenticate(socket){
+	var err;
+	//Retrive token data from handshake
+	var token, source;
+	if (socket.handshake.query && socket.handshake.query.token && socket.handshake.query.authsource){
+		token = socket.handshake.query.token;
+		source = socket.handshake.query.authsource;
+	} else{
+		emitError(socket, 'authFailed', 'Bad request');
+		socket.disconnect(true);
+		return;
+	}
+
+	//Match authsource with corresponding handler function
+	if(source === 'facebook'){
+		err = authenticateUserFacebook(socket, token);
+	} else{
+		emitError(socket, 'authFailed', 'Bad request');
+		socket.disconnect(true);
+		return;
+	}
+
+	//Check if error occured
+	if(err != null){
+		emitError(socket, 'authFailed', err);
+		socket.disconnect(true);
+	}
+}
 //Temp user profile storage (replace with database)
 var userData = {};
 
-var authenticatedUsers = {};
+var UserList = {};
 
 function authenticateUserFacebook(socket, token){
 	const options = {
@@ -51,48 +77,44 @@ function authenticateUserFacebook(socket, token){
 
 	request(options, function(err, response, body){
 		if(err){
-			authFailed(socket, err);
+			return err;
 		} else if (body.error){
-			authFailed(socket, 'Invalid access token');
+			return 'Invalid access token';
 		} else {
 			console.log('FB user authenticated with id: ' + body.id);
-			authSucceeded(socket, body);
+			authSucceeded(socket, body.id);
+			return null;
 		}
 	});
 }
 
 function emitError(socket, type, message){
-	socket.emit('err', {type: type, message: message});
+	socket.emit('exception', {type: type, message: message});
 }
 
-function authFailed(socket, err){
-	emitError(socket, 'authFailed', err)
-}
 
-function authSucceeded(socket, body){
-	//Generate JWT token
-	var userid = body.id; //FB userid
-	deleteOldAuthentication(userid);
-	authenticatedUsers[body.id] = {socket: socket, expiresIn: expiryTime}; //Replace with token
+function authSucceeded(socket, userid){
+	//TODO: Generate JWT token
+	revokeOldAuthentication(userid);
+	UserList[userid] = {socket: socket, expiresIn: expiryTime}; //TODO: Replace with token
 	socket.emit('authSucceeded', 'insert jwt token here');
 }
 
-function deleteOldAuthentication(userid){
-	if(authenticatedUsers[userid]){
-		authenticatedUsers[userid].socket.emit('duplicateConnection');
-		delete authenticatedUsers[userid];
+function revokeOldAuthentication(userid){
+	if(UserList[userid]){
+		UserList[userid].socket.emit('duplicateConnection');
+		UserList[userid].socket.disconnect(true);
 	}
+}
+
+function emitAll(type, data){
+	io.emit(type, data);
 }
 
 //Test real time authentication
 var testVal = 0;
 setInterval(function(){
 	testVal++;
-	emitAllAuthenticated('testrealtime', testVal);
+	emitAll('testrealtime', testVal);
 }, 1000/10);
 
-function emitAllAuthenticated(type, data){
-	for (var id in authenticatedUsers){
-		authenticatedUsers[id].socket.emit(type, data);
-	}
-}

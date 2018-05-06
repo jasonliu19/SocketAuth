@@ -11,7 +11,7 @@
 <!--     TEST ELEMENTS -->
     <p id = 'teststatus' class = 'test'></p>
     <p id = 'testrealtime' class = 'test'></p>
-    <button class = 'test' onclick = "testBogusAuthentication()">Test bogus authentication</button>
+<!--     <button class = 'test' onclick = "testBogusAuthentication()">Test bogus authentication</button> -->
 <!--     END PAGE BODY -->
 <!--     DEPENDENCIES   -->
     <script src = "/socket.io/socket.io.js"></script>
@@ -52,7 +52,7 @@
 
       function handleAuthorization(fbresponse){
         if(fbresponse.status === 'connected'){
-          requestAuthFromServer(fbresponse.authResponse.accessToken);
+          connectToSocket(fbresponse.authResponse.accessToken, 'facebook');
           $('#fbloginwrap').css('display','none');
           console.log('Authorized');
         } else {
@@ -64,40 +64,43 @@
 
       //START SOCKET CODE
       var URL_SERVER = 'https://localhost:8443';
-      var socket = io.connect(URL_SERVER);
+      var socket;
 
-      //WARNING: Only send if connected via HTTP
-      function requestAuthFromServer(token){
-        socket.emit('requestAuth', token);
+      //WARNING: Only send if connected via HTTPS
+      function connectToSocket(token, source){
+        socket = io.connect(URL_SERVER, {
+          query: {token: token, authsource: source}
+        });
+        initSocketEvents();
       }
 
-      socket.on('message', function(data) {
-        alert(data);
-      });
-      socket.on('err', function(err){
-        if(err.type === 'authFailed'){
-          alert('Authentication failed: ' + err.message);
-        } else {
-          alert('Error: ' + err.message);
-        }
-      });
-      socket.on('authSucceeded', function(data) {
-        $('#teststatus').text(data);
-      });
+      function initSocketEvents(){
+        socket.on('message', function(data) {
+          alert(data);
+        });
 
-      socket.on('duplicateConnection', function(){
-        alert('Another user has logged into your account');
-      });
+        socket.on('exception', function(err){
+          if(err.type === 'authFailed'){
+            alert('Authentication failed: ' + err.message);
+          } else {
+            alert('Error: ' + err.message);
+          }
+        });
+
+        socket.on('authSucceeded', function(data) {
+          $('#teststatus').text(data);
+        });
+
+        socket.on('duplicateConnection', function(){
+          alert('Another user has logged into your account');
+        });
+
+        socket.on('testrealtime', function(val){
+          $('#testrealtime').text(val);
+        });
+      }
+
       //END SOCKET CODE
-
-      //START TEST CODE
-      function testBogusAuthentication(){
-        socket.emit('requestAuth', 'asdasdsadas');
-      }
-      socket.on('testrealtime', function(val){
-        $('#testrealtime').text(val);
-      });
-
     </script>
   </body>
 </html>
