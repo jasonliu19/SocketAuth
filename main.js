@@ -32,6 +32,18 @@ app.get('/', function(req, res) {
   res.sendFile(__dirname + '/client/index.html');
 });
 
+//For Heroku: redirect all traffic to https
+
+app.configure('production' function(){
+	app.use(function(req,res,next){
+		if(req.header 'x-forwarded-proto' !== 'https'){
+			res.redirect(`https://${req.header('host')}${req.url}`);
+		} else{
+			next();
+		}
+	});
+});
+
 io.on('connection', function(socket) {
   console.log('New socket with id: '+ socket.id);
   //Handle authorization
